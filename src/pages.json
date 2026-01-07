@@ -1,0 +1,49 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "Splatoon 3"
+      }
+    },
+    {
+      "path": "pages/salmonrun/index",
+      "style": {
+        "navigationBarTitleText": "Salmon Run"
+      }
+    },
+    {
+      "path": "pages/challenges/index",
+      "style": {
+        "navigationBarTitleText": "Challenges"
+      }
+    },
+    {
+      "path": "pages/gear/index",
+      "style": {
+        "navigationBarTitleText": "Gear"
+      }
+    },
+    {
+      "path": "pages/splatfests/index",
+      "style": {
+        "navigationBarTitleText": "Splatfests"
+      }
+    },
+    {
+      "path": "pages/socials/index",
+      "style": {
+        "navigationBarTitleText": "Socials"
+      }
+    },
+    {
+      "path": "pages/about/index",
+      "style": {
+        "navigationBarTitleText": "About"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationStyle": "custom"
+  }
+}

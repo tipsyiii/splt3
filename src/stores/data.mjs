@@ -1,6 +1,43 @@
 import { acceptHMRUpdate, defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
 
+async function requestJson(url) {
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.request === 'function') {
+      return await new Promise((resolve, reject) => {
+        uni.request({
+          url,
+          dataType: 'json',
+          success(res) {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              resolve(res.data);
+            } else {
+              reject(res);
+            }
+          },
+          fail(err) {
+            reject(err);
+          },
+        });
+      });
+    }
+  } catch (e) {
+    void e;
+  }
+
+  if (typeof fetch !== 'function') {
+    throw new Error('No request implementation available');
+  }
+
+  let response = await fetch(url);
+
+  if (!response.ok) {
+    throw response;
+  }
+
+  return response.json();
+}
+
 // Endpoint store definition (used for each individual data endpoint)
 function defineEndpointStore(id, endpoint, transform = null) {
   return defineStore(`data/${id}`, () => {
@@ -12,15 +49,15 @@ function defineEndpointStore(id, endpoint, transform = null) {
 
       try {
         let baseUrl = import.meta.env.VITE_DATA_FROM || '';
-        let response = await fetch(baseUrl + endpoint);
+        let json;
 
-        if (!response.ok) {
-          console.error(response);
+        try {
+          json = await requestJson(baseUrl + endpoint);
+        } catch (e) {
+          console.error(e);
 
           return;
         }
-
-        let json = await response.json();
 
         setData(json);
       } finally {

@@ -4,6 +4,96 @@ import languages from '../assets/i18n/index.mjs';
 
 const LANGUAGE_KEY = 'lang';
 
+function normalizeLanguageCode(code) {
+  if (!code) {
+    return '';
+  }
+
+  return String(code).replace('_', '-');
+}
+
+function getStoredLanguageCode() {
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.getStorageSync === 'function') {
+      return uni.getStorageSync(LANGUAGE_KEY);
+    }
+  } catch (e) {
+    //
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage) {
+      return localStorage.getItem(LANGUAGE_KEY);
+    }
+  } catch (e) {
+    //
+  }
+
+  return null;
+}
+
+function setStoredLanguageCode(value) {
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.setStorageSync === 'function') {
+      uni.setStorageSync(LANGUAGE_KEY, value);
+      return;
+    }
+  } catch (e) {
+    //
+  }
+
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage) {
+      localStorage.setItem(LANGUAGE_KEY, value);
+    }
+  } catch (e) {
+    //
+  }
+}
+
+function setCssVar(name, value) {
+  try {
+    if (typeof document !== 'undefined' && document.documentElement?.style?.setProperty) {
+      document.documentElement.style.setProperty(name, value);
+    }
+  } catch (e) {
+    //
+  }
+}
+
+async function requestJson(url) {
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.request === 'function') {
+      return await new Promise((resolve, reject) => {
+        uni.request({
+          url,
+          dataType: 'json',
+          success(res) {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              resolve(res.data);
+            } else {
+              reject(res);
+            }
+          },
+          fail(err) {
+            reject(err);
+          },
+        });
+      });
+    }
+  } catch (e) {
+    //
+  }
+
+  let response = await fetch(url);
+
+  if (!response.ok) {
+    throw response;
+  }
+
+  return response.json();
+}
+
 export const locales = [
   { code: 'de-DE', flag: '🇩🇪', name: 'Deutsch' },
   { code: 'en-US', flag: '🇺🇸', name: 'English (US)' },
@@ -60,6 +150,11 @@ let i18n = null;
 export function initializeI18n() {
   if (!i18n) {
     i18n = createI18n({
+      legacy: false,
+      globalInjection: true,
+      missingWarn: false,
+      fallbackWarn: false,
+      warnHtmlMessage: false,
       locale: currentLocale().code,
       fallbackLocale: 'en-US',
       messages: { ...languages },
@@ -70,7 +165,13 @@ export function initializeI18n() {
     });
 
     // Listen for local storage changes
-    window.addEventListener('storage', reload);
+    try {
+      if (typeof window !== 'undefined' && window.addEventListener) {
+        window.addEventListener('storage', reload);
+      }
+    } catch (e) {
+      //
+    }
     reload();
   }
 
@@ -96,38 +197,57 @@ function ruPluralization(choice, choicesLength, orgRule) {
 }
 
 function reload() {
-  i18n.global.locale.value = currentLocale().code;
+  let code = currentLocale().code;
+
+  if (i18n.global?.locale && typeof i18n.global.locale === 'object' && 'value' in i18n.global.locale) {
+    i18n.global.locale.value = code;
+  } else {
+    i18n.global.locale = code;
+  }
   loadLocale();
 
-  switch (currentLocale().code) {
+  switch (code) {
     case 'zh-CN':
-      document.documentElement.style.setProperty('--font-family-s1', 'splatoon1, splatoon1chzh, sans-serif');
-      document.documentElement.style.setProperty('--font-family-s2', 'splatoon2, splatoon2chzh, sans-serif');
+      setCssVar('--font-family-s1', 'splatoon1, splatoon1chzh, sans-serif');
+      setCssVar('--font-family-s2', 'splatoon2, splatoon2chzh, sans-serif');
       break;
 
     case 'zh-TW':
-      document.documentElement.style.setProperty('--font-family-s1', 'splatoon1, splatoon1twzh, sans-serif');
-      document.documentElement.style.setProperty('--font-family-s2', 'splatoon2, splatoon2twzh, sans-serif');
+      setCssVar('--font-family-s1', 'splatoon1, splatoon1twzh, sans-serif');
+      setCssVar('--font-family-s2', 'splatoon2, splatoon2twzh, sans-serif');
       break;
 
     default:
-      document.documentElement.style.setProperty('--font-family-s1', 'splatoon1, splatoon1jpja, sans-serif');
-      document.documentElement.style.setProperty('--font-family-s2', 'splatoon2, splatoon2jpja, sans-serif');
+      setCssVar('--font-family-s1', 'splatoon1, splatoon1jpja, sans-serif');
+      setCssVar('--font-family-s2', 'splatoon2, splatoon2jpja, sans-serif');
       break;
   }
 }
 
 async function loadLocale() {
   let locale = currentLocale().code;
-  let response = await fetch(`/data/locale/${locale}.json`);
+  let json;
 
-  if (!response.ok) {
-    console.error(response);
+  const baseUrl = String(import.meta.env.VITE_DATA_FROM || '').replace(/\/$/, '');
+  const candidates = [
+    `${baseUrl}/data/${locale}.json`,
+    `${baseUrl}/data/locale/${locale}.json`,
+  ];
 
-    return;
+  let lastError;
+  for (const url of candidates) {
+    try {
+      json = await requestJson(url);
+      break;
+    } catch (e) {
+      lastError = e;
+    }
   }
 
-  let json = await response.json();
+  if (!json) {
+    console.error(lastError);
+    return;
+  }
 
   i18n.global.setLocaleMessage(locale, {
     ...i18n.global.getLocaleMessage(locale),
@@ -140,21 +260,43 @@ function currentLocale() {
 }
 
 function preferredLocale() {
-  let code = localStorage && localStorage.getItem(LANGUAGE_KEY);
+  let code = getStoredLanguageCode();
 
   return locales.find(l => l.code === code);
 }
 
 export function setPreferredLocale(value) {
-  localStorage.setItem(LANGUAGE_KEY, value);
+  setStoredLanguageCode(value);
   reload();
 }
 
 function detectLocale() {
-  let languages = window.navigator.languages || [window.navigator.language];
+  let languages;
+
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.getSystemInfoSync === 'function') {
+      let lang = normalizeLanguageCode(uni.getSystemInfoSync().language);
+      languages = lang ? [lang] : null;
+    }
+  } catch (e) {
+    //
+  }
+
+  if (!languages) {
+    try {
+      if (typeof window !== 'undefined' && window.navigator) {
+        languages = window.navigator.languages || [window.navigator.language];
+      }
+    } catch (e) {
+      //
+    }
+  }
+
+  languages = languages || [];
 
   // Try to find a matching language
   for (let language of languages) {
+    language = normalizeLanguageCode(language);
     let locale = locales.find(l => l.code.startsWith(language))
        || locales.find(l => l.code.startsWith(language.substring(0, 2)));
 

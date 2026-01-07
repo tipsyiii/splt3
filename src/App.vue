@@ -1,10 +1,12 @@
 <template>
-  <RouterView />
+  <view :class="rootClass">
+    <slot />
+  </view>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from 'vue';
-import { RouterView } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useDataStore } from './stores/data';
 import { useTimeStore } from './stores/time.mjs';
 
@@ -16,14 +18,39 @@ const data = useDataStore();
 onMounted(() => data.startUpdating());
 onUnmounted(() => data.stopUpdating());
 
-try {
-  // Detect mobile browsers
-  if (navigator.userAgent.match(/iPhone|iPad|Android/i)) {
-    document.body.classList.add('is-mobile');
-  }
-} catch (e) {
-  //
+const isMobile = ref(false);
+
+const { locale } = useI18n();
+
+function normalizeLocaleClass(code) {
+  return `lang-${String(code || 'en-US').replace('_', '-').toLowerCase()}`;
 }
+
+const rootClass = computed(() => ({
+  'is-mobile': isMobile.value,
+  [normalizeLocaleClass(locale.value)]: true,
+}));
+
+function detectMobile() {
+  try {
+    if (typeof uni !== 'undefined' && typeof uni.getSystemInfoSync === 'function') {
+      const info = uni.getSystemInfoSync();
+      const platform = String(info.platform || '').toLowerCase();
+      isMobile.value = platform === 'ios' || platform === 'android';
+      return;
+    }
+  } catch (e) {
+    //
+  }
+
+  try {
+    isMobile.value = !!navigator.userAgent.match(/iPhone|iPad|Android/i);
+  } catch (e) {
+    //
+  }
+}
+
+onMounted(() => detectMobile());
 </script>
 
 <style>

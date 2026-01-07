@@ -4,9 +4,16 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+body,
+page,
+uni-page-body,
+.uni-page-body,
+uni-page-wrapper,
+.uni-page-wrapper {
   @apply text-zinc-100;
   @apply bg-black;
+  color: #f4f4f5;
+  background-color: #000;
   background-image: url('@/assets/img/information-bg.jpg');
   background-size: 400px;
   background-position: center;

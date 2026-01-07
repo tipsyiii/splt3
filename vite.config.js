@@ -1,9 +1,12 @@
-import { resolve } from 'path';
 import { fileURLToPath, URL } from 'url';
 
 import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
-import vueI18n from '@intlify/vite-plugin-vue-i18n';
+import uni from '@dcloudio/vite-plugin-uni';
+import tailwindcssNesting from 'tailwindcss/nesting';
+import tailwindcss from 'tailwindcss';
+import postcssPresetEnv from 'postcss-preset-env';
+import autoprefixer from 'autoprefixer';
+import uniTailwind from '@uni-helper/vite-plugin-uni-tailwind';
 
 const redirectToDist = [
   '/assets/splatnet/',
@@ -12,10 +15,29 @@ const redirectToDist = [
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  css: {
+    postcss: {
+      plugins: [
+        tailwindcssNesting(),
+        tailwindcss(),
+        autoprefixer(),
+        postcssPresetEnv({
+          stage: 3,
+          features: {
+            'nesting-rules': false,
+            'custom-properties': true,
+            'cascade-layers': true,
+          },
+        }),
+      ],
+    },
+  },
   plugins: [
-    vue(),
-    vueI18n({
-      include: resolve(__dirname, './src/assets/i18n/**'),
+    uni(),
+    uniTailwind({
+      shouldTransformScript(fileName) {
+        return /[\\/]src[\\/](pages|components|layouts|views)[\\/]/.test(fileName);
+      },
     }),
     {
       // Quick hack to redirect dynamic assets to the /dist/ directory
@@ -33,15 +55,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-    },
-  },
-  build: {
-    emptyOutDir: false,
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html'),
-        screenshots: resolve(__dirname, 'screenshots/index.html'),
-      },
     },
   },
 });

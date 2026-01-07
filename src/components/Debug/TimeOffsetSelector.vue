@@ -6,12 +6,17 @@
       </div>
 
       <div v-for="part of ['d', 'h', 'm']" :key="part">
-        <select v-model="values[part]" class="bg-zinc-800 text-right">
-          <option v-for="i of range(limits[part])" :key="i">
-            {{ i }}
-          </option>
-        </select>
-        {{ part.toUpperCase() }}
+        <picker
+          class="bg-zinc-800 text-right"
+          mode="selector"
+          :range="ranges[part]"
+          :value="currentIndex(part)"
+          @change="(e) => onChange(part, e)"
+        >
+          <view class="bg-zinc-800 text-right px-1">
+            {{ values[part] }} {{ part.toUpperCase() }}
+          </view>
+        </picker>
       </div>
     </div>
   </div>
@@ -34,6 +39,23 @@ function range(limit) {
   }
 
   return result;
+}
+
+const ranges = {
+  d: range(limits.d),
+  h: range(limits.h),
+  m: range(limits.m),
+};
+
+function currentIndex(part) {
+  const idx = ranges[part].indexOf(values[part]);
+  return idx >= 0 ? idx : 0;
+}
+
+function onChange(part, e) {
+  const idx = Number(e?.detail?.value);
+  const nextValue = ranges[part][idx];
+  if (typeof nextValue === 'number') values[part] = nextValue;
 }
 
 watchEffect(() => {

@@ -1,17 +1,20 @@
-import { createApp } from 'vue';
+import { createSSRApp } from 'vue';
 import { createPinia } from 'pinia';
 
 import { initializeI18n } from './common/i18n';
 
 import App from './App.vue';
-import router from './router';
+import RouterLinkCompat from './components/RouterLinkCompat.vue';
 
-const i18n = initializeI18n();
+export function createApp() {
+  const i18n = initializeI18n();
+  const app = createSSRApp(App);
 
-const app = createApp(App);
+  app.use(i18n);
+  app.use(createPinia());
+  app.component('router-link', RouterLinkCompat);
 
-app.use(i18n);
-app.use(createPinia());
-app.use(router);
-
-app.mount('#app');
+  return {
+    app,
+  };
+}

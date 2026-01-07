@@ -3,6 +3,16 @@
   --font-family-s2: splatoon2,splatoon2jpja,sans-serif;
 }
 
+.lang-zh-cn {
+  --font-family-s1: splatoon1, splatoon1chzh, sans-serif;
+  --font-family-s2: splatoon2, splatoon2chzh, sans-serif;
+}
+
+.lang-zh-tw {
+  --font-family-s1: splatoon1, splatoon1twzh, sans-serif;
+  --font-family-s2: splatoon2, splatoon2twzh, sans-serif;
+}
+
 @font-face {
   font-family: splatoon1;
   src: url("@/assets/fonts/Splatoon1-common.woff2") format("woff2"),url("@/assets/fonts/Splatoon1-common.woff") format("woff");

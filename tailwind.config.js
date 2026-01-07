@@ -40,8 +40,8 @@ module.exports = {
   },
   plugins: [
     plugin(function({ addVariant }) {
-      addVariant('mobile', 'body.is-mobile &');
-      addVariant('ss', 'body.for-screenshots &');
+      addVariant('mobile', ['body.is-mobile &', '.is-mobile &']);
+      addVariant('ss', ['body.for-screenshots &', '.for-screenshots &']);
     }),
   ],
 };
